@@ -295,6 +295,10 @@ class Environment(object):
         for value in set.values:
             collect(value)
         collect(set.parallelism.value)
+        collect(len(set.aggregates))
+        for aggregate in set.aggregates:
+            collect(aggregate[0])  # aggregation function
+            collect(aggregate[1])  # field
 
     def _receive_result(self):
         jer = JobExecutionResult()

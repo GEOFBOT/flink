@@ -50,6 +50,7 @@ class OperationInfo():
             self.id = -1
             self.to_err = False
             self.parallelism = Value(-1)
+            self.aggregates = []
             #internally used
             self.parent_set = None
             self.other_set = None

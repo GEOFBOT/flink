@@ -95,14 +95,13 @@ public class PythonOperationInfo {
 		}
 		parallelism = (Integer) streamer.getRecord(true);
 
-		/*
-		aggregates = new AggregationEntry[count];
-		for (int x = 0; x < count; x++) {
+		int aggregateCount = (Integer) streamer.getRecord(true);
+		aggregates = new AggregationEntry[aggregateCount];
+		for (int x = 0; x < aggregateCount; x++) {
 			int encodedAgg = (Integer) streamer.getRecord(true);
 			int field = (Integer) streamer.getRecord(true);
 			aggregates[x] = new AggregationEntry(encodedAgg, field);
 		}
-		*/
 	}
 
 	@Override

@@ -50,12 +50,17 @@ class _Identifier(object):
     DISTINCT = "distinct"
     PARTITION_HASH = "partition_hash"
     REBALANCE = "rebalance"
+    AGGREGATE = "aggregate"
 
 
 class WriteMode(object):
     NO_OVERWRITE = 0
     OVERWRITE = 1
 
+class Aggregations(object):
+    MAX = 0
+    MIN = 1
+    SUM = 2
 
 class Order(object):
     NONE = 0

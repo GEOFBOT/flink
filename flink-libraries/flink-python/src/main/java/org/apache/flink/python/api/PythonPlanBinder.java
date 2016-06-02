@@ -454,8 +454,15 @@ public class PythonPlanBinder {
 	}
 
 	private void createAggregationOperation(PythonOperationInfo info) throws IOException {
-		DataSet op = (DataSet) sets.get(info.parentID);
-		AggregateOperator ao = op.aggregate(info.aggregates[0].agg, info.aggregates[0].field);
+		Object op = sets.get(info.parentID);
+		AggregateOperator ao;
+
+		if (op instanceof DataSet) {
+			ao = ((DataSet) op).aggregate(info.aggregates[0].agg, info.aggregates[0].field);
+		} else {
+			ao = ((UnsortedGrouping) op).aggregate(info.aggregates[0].agg, info.aggregates[0].field);
+
+		}
 
 		for (int x = 1; x < info.count; x++) {
 			ao = ao.and(info.aggregates[x].agg, info.aggregates[x].field);

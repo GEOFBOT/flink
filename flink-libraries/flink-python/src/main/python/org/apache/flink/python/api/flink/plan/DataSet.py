@@ -192,6 +192,32 @@ class DataSet(object):
         self._env._sets.append(child)
         return child_set
 
+    def aggregate(self, aggregates):
+        """
+        Applies an Aggregate transformation on a non-grouped Tuple DataSet.
+        :param aggregates: A list of Tuples of the aggregation function and the index of the Tuple
+        field on which to perform the function. (function, field)
+        :return: An AggregateOperator that represents the aggregated DataSet.
+        """
+        child = OperationInfo()
+        child_set = OperatorSet(self._env, child)
+        child.identifier = _Identifier.AGGREGATE
+        child.parent = self._info
+
+        for aggregate in aggregates:
+            child.aggregates.append(aggregate)
+
+        child.name = "PythonAggregate"
+        #child.types = _createArrayTypeInfo()
+        self._info.children.append(child)
+        self._env._sets.append(child)
+        return child_set
+
+
+    #def and(self, agg, field):
+    #    return self.aggregate(agg, field)
+
+
     def project(self, *fields):
         """
         Applies a Project transformation on a Tuple DataSet.
@@ -698,6 +724,30 @@ class UnsortedGrouping(Grouping):
         child.name = "PythonReduce"
         child.types = _createArrayTypeInfo()
         child.key1 = self._child_chain[0].keys
+        self._info.parallelism = child.parallelism
+        self._info.children.append(child)
+        self._env._sets.append(child)
+
+        return child_set
+
+    def aggregate(self, aggregates):
+        """
+        Applies an Aggregate transformation on a non-grouped Tuple DataSet.
+        :param aggregates: A list of Tuples of the aggregation function and the index of the Tuple
+        field on which to perform the function. (function, field)
+        :return: An AggregateOperator that represents the aggregated DataSet.
+        """
+        self._finalize()
+        child = OperationInfo()
+        child_set = OperatorSet(self._env, child)
+        child.identifier = _Identifier.AGGREGATE
+        child.parent = self._info
+
+        for aggregate in aggregates:
+            child.aggregates.append(aggregate)
+
+        child.name = "PythonAggregate"
+        #child.types = _createArrayTypeInfo()
         self._info.parallelism = child.parallelism
         self._info.children.append(child)
         self._env._sets.append(child)
