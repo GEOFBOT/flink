@@ -192,6 +192,15 @@ class DataSet(object):
         self._env._sets.append(child)
         return child_set
 
+    def aggregate(self, aggregation, field):
+        """
+        Applies an Aggregate transformation (using a GroupReduceFunction) on a non-grouped Tuple DataSet.
+        :param aggregation: The built-in aggregation function to apply on the DataSet.
+        :param field: The index of the Tuple field on which to perform the function.
+        :return: A GroupReduceOperator that represents the aggregated DataSet.
+        """
+        return self.reduce_group(aggregation(field), combinable=True)
+
     def project(self, *fields):
         """
         Applies a Project transformation on a Tuple DataSet.
@@ -703,6 +712,15 @@ class UnsortedGrouping(Grouping):
         self._env._sets.append(child)
 
         return child_set
+
+    def aggregate(self, aggregation, field):
+        """
+        Applies an Aggregate transformation (using a GroupReduceFunction) on a Tuple UnsortedGrouping.
+        :param aggregation: The built-in aggregation function to apply on the UnsortedGrouping
+        :param field: The index of the Tuple field on which to perform the function.
+        :return: A GroupReduceOperator that represents the aggregated UnsortedGrouping.
+        """
+        return self.reduce_group(aggregation(field), combinable=True)
 
     def _finalize(self):
         grouping = self._child_chain[0]
