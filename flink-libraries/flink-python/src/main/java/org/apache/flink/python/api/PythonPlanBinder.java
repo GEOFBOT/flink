@@ -53,6 +53,7 @@ import org.apache.flink.python.api.functions.PythonMapPartition;
 import org.apache.flink.python.api.functions.util.KeyDiscarder;
 import org.apache.flink.python.api.functions.util.SerializerMap;
 import org.apache.flink.python.api.functions.util.StringDeserializerMap;
+import org.apache.flink.python.api.functions.util.LongDeserializerMap;
 import org.apache.flink.python.api.streaming.plan.PythonPlanStreamer;
 import org.apache.flink.runtime.filecache.FileCache;
 import org.slf4j.Logger;
@@ -457,18 +458,27 @@ public class PythonPlanBinder {
 		Object op = sets.get(info.parentID);
 		AggregateOperator ao;
 
+		// Convert byte[] to Long so we can aggregate, then convert back
 		if (op instanceof DataSet) {
-			ao = ((DataSet) op).aggregate(info.aggregates[0].agg, info.aggregates[0].field);
+			DataSet<byte[]> op1 = (DataSet<byte[]>) op;
+			ao = op1.map(new LongDeserializerMap()).aggregate(info.aggregates[0].agg, info.aggregates[0].field);
+			for (int x = 1; x < info.count; x++) {
+				ao = ao.and(info.aggregates[x].agg, info.aggregates[x].field);
+			}
+
+			DataSet<Long> ao_done = (DataSet<Long>) ao.setParallelism(getParallelism(info)).name("Aggregation");
+			sets.put(info.setID, ao_done.map(new SerializerMap<Long>()));
 		} else {
-			ao = ((UnsortedGrouping) op).aggregate(info.aggregates[0].agg, info.aggregates[0].field);
+			UnsortedGrouping<byte[]> op1 = (UnsortedGrouping<byte[]>) op;
+			DataSet<Long> deserialized = op1.getInputDataSet().map(new LongDeserializerMap());
+			ao = deserialized.aggregate(info.aggregates[0].agg, info.aggregates[0].field);
+			for (int x = 1; x < info.count; x++) {
+				ao = ao.and(info.aggregates[x].agg, info.aggregates[x].field);
+			}
 
+			DataSet<Long> ao_done = (DataSet<Long>) ao.setParallelism(getParallelism(info)).name("Aggregation");
+			sets.put(info.setID, ao_done.map(new SerializerMap<Long>()).groupBy(op1.getKeys()));
 		}
-
-		for (int x = 1; x < info.count; x++) {
-			ao = ao.and(info.aggregates[x].agg, info.aggregates[x].field);
-		}
-
-		sets.put(info.setID, ao.setParallelism(getParallelism(info)).name("Aggregation"));
 	}
 
 	@SuppressWarnings("unchecked")
