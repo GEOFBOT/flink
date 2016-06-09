@@ -692,10 +692,6 @@ public abstract class DataSet<T> {
 		return new UnsortedGrouping<>(this, new Keys.ExpressionKeys<>(fields, getType()));
 	}
 
-	public UnsortedGrouping<T> groupBy(Keys<T> keys) {
-		return new UnsortedGrouping<>(this, keys);
-	}
-
 	/**
 	 * Groups a {@link DataSet} using field expressions. A field expression is either the name of a public field
 	 * or a getter method with parentheses of the {@link DataSet}S underlying type. A dot can be used to drill down
