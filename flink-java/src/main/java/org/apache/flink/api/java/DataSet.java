@@ -718,6 +718,10 @@ public abstract class DataSet<T> {
 	public UnsortedGrouping<T> groupBy(String... fields) {
 		return new UnsortedGrouping<>(this, new Keys.ExpressionKeys<>(fields, getType()));
 	}
+
+	public UnsortedGrouping<T> groupBy(Keys<T> keys) {
+		return new UnsortedGrouping<>(this, keys);
+	}
 	
 	// --------------------------------------------------------------------------------------------
 	//  Joining

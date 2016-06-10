@@ -12,15 +12,8 @@
  */
 package org.apache.flink.python.api;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Random;
-
 import org.apache.flink.api.common.JobExecutionResult;
+import org.apache.flink.api.common.operators.Keys;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
@@ -31,7 +24,7 @@ import org.apache.flink.api.java.operators.AggregateOperator;
 import org.apache.flink.api.java.operators.CoGroupRawOperator;
 import org.apache.flink.api.java.operators.CrossOperator.DefaultCross;
 import org.apache.flink.api.java.operators.Grouping;
-import org.apache.flink.api.common.operators.Keys;
+import org.apache.flink.api.java.operators.Operator;
 import org.apache.flink.api.java.operators.SortedGrouping;
 import org.apache.flink.api.java.operators.UdfOperator;
 import org.apache.flink.api.java.operators.UnsortedGrouping;
@@ -41,22 +34,32 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.core.fs.Path;
-import org.apache.flink.python.api.functions.util.NestedKeyDiscarder;
-import org.apache.flink.python.api.functions.util.StringTupleDeserializerMap;
 import org.apache.flink.python.api.PythonOperationInfo.DatasizeHint;
-import static org.apache.flink.python.api.PythonOperationInfo.DatasizeHint.HUGE;
-import static org.apache.flink.python.api.PythonOperationInfo.DatasizeHint.NONE;
-import static org.apache.flink.python.api.PythonOperationInfo.DatasizeHint.TINY;
 import org.apache.flink.python.api.functions.PythonCoGroup;
-import org.apache.flink.python.api.functions.util.IdentityGroupReduce;
 import org.apache.flink.python.api.functions.PythonMapPartition;
+import org.apache.flink.python.api.functions.util.IdentityGroupReduce;
 import org.apache.flink.python.api.functions.util.KeyDiscarder;
+import org.apache.flink.python.api.functions.util.LongTupleDeserializerMap;
+import org.apache.flink.python.api.functions.util.NestedKeyDiscarder;
 import org.apache.flink.python.api.functions.util.SerializerMap;
 import org.apache.flink.python.api.functions.util.StringDeserializerMap;
+import org.apache.flink.python.api.functions.util.StringTupleDeserializerMap;
 import org.apache.flink.python.api.streaming.plan.PythonPlanStreamer;
 import org.apache.flink.runtime.filecache.FileCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Random;
+
+import static org.apache.flink.python.api.PythonOperationInfo.DatasizeHint.HUGE;
+import static org.apache.flink.python.api.PythonOperationInfo.DatasizeHint.NONE;
+import static org.apache.flink.python.api.PythonOperationInfo.DatasizeHint.TINY;
 
 /**
  * This class allows the execution of a Flink plan written in python.
@@ -458,17 +461,44 @@ public class PythonPlanBinder {
 		AggregateOperator ao;
 
 		if (op instanceof DataSet) {
-			ao = ((DataSet) op).aggregate(info.aggregates[0].agg, info.aggregates[0].field);
-		} else {
-			ao = ((UnsortedGrouping) op).aggregate(info.aggregates[0].agg, info.aggregates[0].field);
+			DataSet<Tuple> op2 = (DataSet<Tuple>) op;
 
+			// convert all byte[] into Long for aggregation
+			int numFields = op2.getType().getTotalFields();
+			Class[] classes = new Class[numFields];
+			for (int i = 0; i < classes.length; i++) {
+				classes[i] = Long.class;
+			}
+			Class<Tuple> returnType = TupleTypeInfo.getBasicAndBasicValueTupleTypeInfo(classes).getTypeClass();
+
+			op2 = op2.map(new LongTupleDeserializerMap()).returns(returnType);
+			ao = op2.aggregate(info.aggregates[0].agg, info.aggregates[0].field);
+		} else {
+			UnsortedGrouping<Tuple> ug = (UnsortedGrouping<Tuple>) op;
+
+			// convert all byte[] into Long for aggregation
+			int numFields = ug.getInputDataSet().getType().getTotalFields();
+			Class[] classes = new Class[numFields];
+			for (int i = 0; i < classes.length; i++) {
+				classes[i] = Long.class;
+			}
+			Class<Tuple> returnType = TupleTypeInfo.getBasicAndBasicValueTupleTypeInfo(classes).getTypeClass();
+
+			ug = ug.getInputDataSet()
+				.map(new LongTupleDeserializerMap())
+				.returns(returnType)
+				.groupBy(ug.getKeys());
+			ao = ug.aggregate(info.aggregates[0].agg, info.aggregates[0].field);
 		}
 
 		for (int x = 1; x < info.count; x++) {
 			ao = ao.and(info.aggregates[x].agg, info.aggregates[x].field);
 		}
 
-		sets.put(info.setID, ao.setParallelism(getParallelism(info)).name("Aggregation"));
+		Operator op2 = ao.setParallelism(getParallelism(info)).name("Aggregation");
+		op2 = ((DataSet<Tuple>) op2).map(new SerializerMap<Tuple>());
+
+		sets.put(info.setID, op2);
 	}
 
 	@SuppressWarnings("unchecked")
