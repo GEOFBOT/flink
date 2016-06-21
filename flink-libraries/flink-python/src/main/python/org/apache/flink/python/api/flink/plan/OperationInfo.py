@@ -48,6 +48,7 @@ class OperationInfo():
             self.values = []
             self.projections = []
             self.id = -1
+            self.termination_criterion = None
             self.to_err = False
             self.parallelism = Value(-1)
             #internally used
