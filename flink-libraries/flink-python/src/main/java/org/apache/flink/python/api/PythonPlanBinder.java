@@ -32,6 +32,7 @@ import org.apache.flink.api.java.operators.CoGroupRawOperator;
 import org.apache.flink.api.java.operators.CrossOperator.DefaultCross;
 import org.apache.flink.api.java.operators.Grouping;
 import org.apache.flink.api.common.operators.Keys;
+import org.apache.flink.api.java.operators.IterativeDataSet;
 import org.apache.flink.api.java.operators.SortedGrouping;
 import org.apache.flink.api.java.operators.UdfOperator;
 import org.apache.flink.api.java.operators.UnsortedGrouping;
@@ -277,7 +278,9 @@ public class PythonPlanBinder {
 		SORT, UNION, FIRST, DISTINCT, GROUPBY, AGGREGATE,
 		REBALANCE, PARTITION_HASH,
 		BROADCAST,
-		COGROUP, CROSS, CROSS_H, CROSS_T, FILTER, FLATMAP, GROUPREDUCE, JOIN, JOIN_H, JOIN_T, MAP, REDUCE, MAPPARTITION
+		COGROUP, CROSS, CROSS_H, CROSS_T,
+		ITERATE_INIT, ITERATE,
+		FILTER, FLATMAP, GROUPREDUCE, JOIN, JOIN_H, JOIN_T, MAP, REDUCE, MAPPARTITION
 	}
 
 	private void receiveOperations() throws IOException {
@@ -350,6 +353,12 @@ public class PythonPlanBinder {
 					break;
 				case CROSS_T:
 					createCrossOperation(TINY, info);
+					break;
+				case ITERATE_INIT:
+					createBulkIterationOperation(info);
+					break;
+				case ITERATE:
+					applyBulkIterationOperation(info);
 					break;
 				case FILTER:
 					createFilterOperation(info);
@@ -547,6 +556,21 @@ public class PythonPlanBinder {
 		} else {
 			sets.put(info.setID, defaultResult.name("DefaultCross"));
 		}
+	}
+
+	private void createBulkIterationOperation(PythonOperationInfo info) {
+		int maxIterations = info.count;
+		IterativeDataSet ds = ((DataSet) sets.get(info.parentID)).iterate(maxIterations);
+		sets.put(info.setID, ds);
+	}
+
+	@SuppressWarnings("unchecked")
+	private void applyBulkIterationOperation(PythonOperationInfo info) {
+		IterativeDataSet iterationStart = (IterativeDataSet) sets.get(info.parentID);
+		DataSet iterationResult = (DataSet) sets.get(info.otherID);
+
+		DataSet iterationStop = iterationStart.closeWith(iterationResult);
+		sets.put(info.setID, iterationStop);
 	}
 
 	@SuppressWarnings("unchecked")
