@@ -33,6 +33,22 @@ from flink.functions.ReduceFunction import ReduceFunction
 from flink.functions.KeySelectorFunction import KeySelectorFunction
 
 
+def get_fields(fields, f = None):
+    """
+    Utility function to process the fields parameter present in many methods.
+    :param fields:
+    :return:
+    """
+    if isinstance(fields[0], TYPES.FunctionType):
+        f = lambda x: (fields[0](x),)
+    if isinstance(fields[0], KeySelectorFunction):
+        f = lambda x: (fields[0].get_key(x),)
+    if f is None:
+        f = lambda x: tuple([x[key] for key in fields])
+
+    return f
+
+
 class Stringify(MapFunction):
     def map(self, value):
         if isinstance(value, (tuple, list)):
@@ -345,6 +361,21 @@ class DataSet(object):
         self._env._sets.append(child)
         return child_set
 
+    def iterate(self, max_iterations):
+        """
+        Initiates an iterative part of the program that executes multiple times and feeds back data sets.
+        :param max_iterations: The maximum number of times that the iteration is executed.
+        :return: An IterativeDataSet that marks the start of the iterative part.
+        """
+        child = OperationInfo()
+        child_set = IterativeDataSet(self._env, child)
+        child.identifier = _Identifier.ITERATE_INIT
+        child.count = max_iterations
+        child.parent = self._info
+        self._info.children.append(child)
+        self._env._sets.append(child)
+        return child_set
+
     def distinct(self, *fields):
         """
         Returns a distinct set of a tuple DataSet using field position keys.
@@ -356,12 +387,7 @@ class DataSet(object):
         if len(fields) == 0:
             f = lambda x: (x,)
             fields = (0,)
-        if isinstance(fields[0], TYPES.FunctionType):
-            f = lambda x: (fields[0](x),)
-        if isinstance(fields[0], KeySelectorFunction):
-            f = lambda x: (fields[0].get_key(x),)
-        if f is None:
-            f = lambda x: tuple([x[key] for key in fields])
+        f = get_fields(fields, f)
         return self.map(lambda x: (f(x), x)).name("DistinctPreStep")._distinct(tuple([x for x in range(len(fields))]))
 
     def _distinct(self, fields):
@@ -545,12 +571,7 @@ class DataSet(object):
         f = None
         if len(fields) == 0:
             raise ValueError("fields argument must not be empty.")
-        if isinstance(fields[0], TYPES.FunctionType):
-            f = lambda x: (fields[0](x),)
-        if isinstance(fields[0], KeySelectorFunction):
-            f = lambda x: (fields[0].get_key(x),)
-        if f is None:
-            f = lambda x: tuple([x[key] for key in fields])
+        f = get_fields(fields, f)
         return self.map(lambda x: (f(x), x)).name("HashPartitionPreStep")._partition_by_hash(tuple([x for x in range(len(fields))]))
 
     def _partition_by_hash(self, fields):
@@ -833,13 +854,7 @@ class UnsortedGrouping(Grouping):
     def _finalize(self):
         grouping = self._child_chain[0]
         keys = grouping.keys
-        f = None
-        if isinstance(keys[0], TYPES.FunctionType):
-            f = lambda x: (keys[0](x),)
-        if isinstance(keys[0], KeySelectorFunction):
-            f = lambda x: (keys[0].get_key(x),)
-        if f is None:
-            f = lambda x: tuple([x[key] for key in keys])
+        f = get_fields(keys)
 
         grouping.parent.operator.map = lambda x: (f(x), x)
         grouping.parent.types = _createKeyValueTypeInfo(len(keys))
@@ -918,13 +933,7 @@ class CoGroupOperatorWhere(object):
         :param fields: The indexes of the Tuple fields of the first co-grouped DataSets that should be used as keys.
         :return: An incomplete CoGroup transformation.
         """
-        f = None
-        if isinstance(fields[0], TYPES.FunctionType):
-            f = lambda x: (fields[0](x),)
-        if isinstance(fields[0], KeySelectorFunction):
-            f = lambda x: (fields[0].get_key(x),)
-        if f is None:
-            f = lambda x: tuple([x[key] for key in fields])
+        f = get_fields(fields)
 
         new_parent_set = self._info.parent_set.map(lambda x: (f(x), x))
         new_parent_set._info.types = _createKeyValueTypeInfo(len(fields))
@@ -949,13 +958,7 @@ class CoGroupOperatorTo(object):
         :param fields: The indexes of the Tuple fields of the second co-grouped DataSet that should be used as keys.
         :return: An incomplete CoGroup transformation.
         """
-        f = None
-        if isinstance(fields[0], TYPES.FunctionType):
-            f = lambda x: (fields[0](x),)
-        if isinstance(fields[0], KeySelectorFunction):
-            f = lambda x: (fields[0].get_key(x),)
-        if f is None:
-            f = lambda x: tuple([x[key] for key in fields])
+        f = get_fields(fields)
 
         new_other_set = self._info.other_set.map(lambda x: (f(x), x))
         new_other_set._info.types = _createKeyValueTypeInfo(len(fields))
@@ -1014,13 +1017,7 @@ class JoinOperatorWhere(object):
         :return:An incomplete Join transformation.
 
         """
-        f = None
-        if isinstance(fields[0], TYPES.FunctionType):
-            f = lambda x: (fields[0](x),)
-        if isinstance(fields[0], KeySelectorFunction):
-            f = lambda x: (fields[0].get_key(x),)
-        if f is None:
-            f = lambda x: tuple([x[key] for key in fields])
+        f = get_fields(fields)
 
         new_parent_set = self._info.parent_set.map(lambda x: (f(x), x))
         new_parent_set._info.types = _createKeyValueTypeInfo(len(fields))
@@ -1046,13 +1043,7 @@ class JoinOperatorTo(object):
         :param fields:The indexes of the Tuple fields of the second join DataSet that should be used as keys.
         :return:An incomplete Join Transformation.
         """
-        f = None
-        if isinstance(fields[0], TYPES.FunctionType):
-            f = lambda x: (fields[0](x),)
-        if isinstance(fields[0], KeySelectorFunction):
-            f = lambda x: (fields[0].get_key(x),)
-        if f is None:
-            f = lambda x: tuple([x[key] for key in fields])
+        f = get_fields(fields)
 
         new_other_set = self._info.other_set.map(lambda x: (f(x), x))
         new_other_set._info.types = _createKeyValueTypeInfo(len(fields))
@@ -1207,3 +1198,27 @@ class AggregateOperator(OperatorSet):
         """
         self._info.operator.add_aggregation(aggregation, field)
         return self
+
+
+class IterativeDataSet(DataSet):
+    def __init__(self, env, info):
+        super(IterativeDataSet, self).__init__(env, info)
+
+    def close_with(self, iteration_result, termination_criterion=None):
+        """
+        Finalizes a bulk iteration operation.
+        :param iteration_result: The DataSet that will be fed back to the next iteration.
+        :return: The DataSet that represents the result of the iteration.
+        """
+        child = OperationInfo()
+        child_set = DataSet(self._env, child)
+        child.identifier = _Identifier.ITERATE
+        if termination_criterion != None:
+            child.termination_criterion = termination_criterion._info
+        child.other = iteration_result._info
+        child.name = "PythonBulkIteration"
+        child.parent = self._info
+        self._info.children.append(child)
+        self._env._sets.append(child)
+        return child_set
+        # todo aggregations

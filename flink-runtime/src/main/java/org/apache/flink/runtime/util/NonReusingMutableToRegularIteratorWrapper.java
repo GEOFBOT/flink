@@ -30,7 +30,7 @@ import java.util.NoSuchElementException;
  * This class wraps a {@link org.apache.flink.util.MutableObjectIterator} into a regular
  * {@link java.util.Iterator}. It will always create new instances and not reuse objects.
  */
-public class NonReusingMutableToRegularIteratorWrapper<T> implements Iterator<T>, Iterable<T> {
+public class NonReusingMutableToRegularIteratorWrapper<T> extends IteratorWrapper<T> {
 
 	private final MutableObjectIterator<T> source;
 
@@ -46,7 +46,7 @@ public class NonReusingMutableToRegularIteratorWrapper<T> implements Iterator<T>
 	}
 
 	@Override
-	public boolean hasNext() {
+	public boolean hasNextWrapped() {
 		if (currentIsAvailable) {
 			return true;
 		} else {

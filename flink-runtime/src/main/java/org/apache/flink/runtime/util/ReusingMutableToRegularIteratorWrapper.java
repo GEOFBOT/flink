@@ -33,7 +33,7 @@ import org.apache.flink.util.TraversableOnceException;
  * whenever hasNext() returns (possibly with false), the previous obtained record is 
  * still valid and cannot have been overwritten internally.
  */
-public class ReusingMutableToRegularIteratorWrapper<T> implements Iterator<T>, Iterable<T> {
+public class ReusingMutableToRegularIteratorWrapper<T> extends IteratorWrapper<T> {
 	
 	private final MutableObjectIterator<T> source;
 	
@@ -51,7 +51,7 @@ public class ReusingMutableToRegularIteratorWrapper<T> implements Iterator<T>, I
 	}
 
 	@Override
-	public boolean hasNext() {
+	public boolean hasNextWrapped() {
 		if (currentIsAvailable) {
 			return true;
 		} else {
