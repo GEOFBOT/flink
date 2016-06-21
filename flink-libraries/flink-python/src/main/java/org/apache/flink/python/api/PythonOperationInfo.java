@@ -45,6 +45,7 @@ public class PythonOperationInfo {
 	public boolean usesUDF;
 	public int parallelism;
 	public int envID;
+	public int terminationCriterionID; //DataSet of termination criterion for bulk iterations
 
 	public PythonOperationInfo(PythonPlanStreamer streamer, int environmentID) throws IOException {
 		identifier = (String) streamer.getRecord();
@@ -85,6 +86,7 @@ public class PythonOperationInfo {
 		frm = (Long) streamer.getRecord();
 		to = (Long) streamer.getRecord();
 		setID = (Integer) streamer.getRecord(true);
+		terminationCriterionID = (Integer) streamer.getRecord(true);
 		toError = (Boolean) streamer.getRecord();
 		count = (Integer) streamer.getRecord(true);
 		int valueCount = (Integer) streamer.getRecord(true);
