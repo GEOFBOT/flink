@@ -345,6 +345,21 @@ class DataSet(object):
         self._env._sets.append(child)
         return child_set
 
+    def iterate(self, max_iterations):
+        """
+        Initiates an iterative part of the program that executes multiple times and feeds back data sets.
+        :param max_iterations: The maximum number of times that the iteration is executed.
+        :return: An IterativeDataSet that marks the start of the iterative part.
+        """
+        child = OperationInfo()
+        child_set = IterativeDataSet(self._env, child)
+        child.identifier = _Identifier.ITERATE_INIT
+        child.count = max_iterations
+        child.parent = self._info
+        self._info.children.append(child)
+        self._env._sets.append(child)
+        return child_set
+
     def distinct(self, *fields):
         """
         Returns a distinct set of a tuple DataSet using field position keys.
@@ -1208,3 +1223,26 @@ class AggregateOperator(OperatorSet):
         """
         self._info.operator.add_aggregation(aggregation, field)
         return self
+
+
+class IterativeDataSet(DataSet):
+    def __init__(self, env, info):
+        super(IterativeDataSet, self).__init__(env, info)
+
+    def close_with(self, iteration_result):
+        """
+        Finalizes a bulk iteration operation.
+        :param iteration_result: The DataSet that will be fed back to the next iteration.
+        :return: The DataSet that represents the result of the iteration.
+        """
+        child = OperationInfo()
+        child_set = DataSet(self._env, child)
+        child.identifier = _Identifier.ITERATE
+        child.other = iteration_result._info
+        child.name = "PythonBulkIteration"
+        child.parent = self._info
+        child.count = child.parent.count  # max_iterations
+        self._info.children.append(child)
+        self._env._sets.append(child)
+        return child_set
+        # todo aggregations

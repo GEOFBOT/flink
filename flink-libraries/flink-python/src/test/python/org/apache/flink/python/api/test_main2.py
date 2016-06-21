@@ -92,6 +92,13 @@ if __name__ == "__main__":
         .cross(d3).project_second(0).project_first(0, 1) \
         .map_partition(Verify([("hello", 1, 0.5), ("world", 1, 0.5), ("hello", 2, 0.4), ("world", 2, 0.4)], "Project Cross")).output()
 
+    #Bulk Iteration
+    iterator = d6.iterate(10)
+    iteration = iterator.map(lambda val: val + 1)
+    iterator.close_with(iteration).map_partition(Verify([11, 11, 22], "Bulk Iteration")).output()
+
+    #Delta Iteration
+
     #CoGroup
     class CoGroup(CoGroupFunction):
         def co_group(self, iterator1, iterator2, collector):

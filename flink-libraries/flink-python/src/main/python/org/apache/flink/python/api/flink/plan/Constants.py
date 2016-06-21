@@ -27,6 +27,8 @@ class _Identifier(object):
     CROSS = "cross"
     CROSSH = "cross_h"
     CROSST = "cross_t"
+    ITERATE_INIT = "iterate_init"
+    ITERATE = "iterate"
     FLATMAP = "flatmap"
     FILTER = "filter"
     MAPPARTITION = "mappartition"
@@ -50,7 +52,6 @@ class _Identifier(object):
     DISTINCT = "distinct"
     PARTITION_HASH = "partition_hash"
     REBALANCE = "rebalance"
-
 
 class WriteMode(object):
     NO_OVERWRITE = 0
