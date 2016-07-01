@@ -557,7 +557,13 @@ public class PythonPlanBinder {
 		IterativeDataSet iterationStart = (IterativeDataSet) sets.get(info.parentID);
 		DataSet iterationResult = (DataSet) sets.get(info.otherID);
 
-		DataSet iterationStop = iterationStart.closeWith(iterationResult);
+		DataSet iterationStop;
+		if (info.terminationCriterionID == -1) {
+			iterationStop = iterationStart.closeWith(iterationResult);
+		} else {
+			DataSet terminationCriterion = (DataSet) sets.get(info.terminationCriterionID);
+			iterationStop = iterationStart.closeWith(iterationResult, terminationCriterion);
+		}
 		sets.put(info.setID, iterationStop);
 	}
 
