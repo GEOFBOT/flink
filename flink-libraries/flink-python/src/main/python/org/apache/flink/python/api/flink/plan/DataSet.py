@@ -1143,7 +1143,6 @@ class IterativeDataSet(DataSet):
         child.other = iteration_result._info
         child.name = "PythonBulkIteration"
         child.parent = self._info
-        child.count = child.parent.count  # max_iterations
         self._info.children.append(child)
         self._env._sets.append(child)
         return child_set
