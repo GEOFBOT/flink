@@ -1129,7 +1129,7 @@ class IterativeDataSet(DataSet):
     def __init__(self, env, info):
         super(IterativeDataSet, self).__init__(env, info)
 
-    def close_with(self, iteration_result):
+    def close_with(self, iteration_result, termination_criterion=None):
         """
         Finalizes a bulk iteration operation.
         :param iteration_result: The DataSet that will be fed back to the next iteration.
@@ -1138,6 +1138,8 @@ class IterativeDataSet(DataSet):
         child = OperationInfo()
         child_set = DataSet(self._env, child)
         child.identifier = _Identifier.ITERATE
+        if termination_criterion != None:
+            child.termination_criterion = termination_criterion._info
         child.other = iteration_result._info
         child.name = "PythonBulkIteration"
         child.parent = self._info
