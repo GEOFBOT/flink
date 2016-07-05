@@ -254,8 +254,7 @@ public class PythonStreamer implements Serializable {
 						case SIGNAL_BUFFER_REQUEST:
 							if (i.hasNext() || sender.hasRemaining(0)) {
 								size = sender.sendBuffer(i, 0);
-								// Not sure why but i.hasNext() hangs after sender.sendBuffer() for Python iterations
-								sendWriteNotification(size, sender.hasRemaining(0));
+								sendWriteNotification(size, sender.hasRemaining(0) || i.hasNext());
 							} else {
 								throw new RuntimeException("External process requested data even though none is available.");
 							}
