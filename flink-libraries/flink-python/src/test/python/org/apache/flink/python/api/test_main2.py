@@ -85,6 +85,7 @@ if __name__ == "__main__":
     iterator.close_with(iteration, term_crit).map_partition(Verify([16, 16, 12 * 16], "Bulk Iteration with Termination Criterion")).output()
 
     #Delta Iteration
+    iterator = d6.iterate_delta()
 
     #CoGroup
     class CoGroup(CoGroupFunction):

@@ -317,6 +317,24 @@ class DataSet(object):
         self._env._sets.append(child)
         return child_set
 
+    def delta_iterate(self, workset, max_iterations, *key_positions):
+        """
+        Initiates a delta iteration.
+        :param workset: The initial version of the data set that is fed back to the next iteration step (the workset).
+        :param max_iterations: The maximum number of iteration steps, as a fall back safeguard.
+        :param key_positions: The position of the tuple fields that is used as the key of the solution set.
+        :return: The DeltaIteration that marks the start of a delta iteration.
+        """
+        child = OperationInfo()
+        # DeltaIteration is a container for two DataSets. It doesn't have a parent or any children.
+        child_set = DataSet(self._env, child)
+        child.identifier = _Identifier.ITERATE_DELTA_INIT
+        child.count = max_iterations
+        child.other = workset._info
+        child.values = key_positions
+        self._env._sets.append(child)
+        return DeltaIteration(child_set, workset)
+
     def distinct(self, *fields):
         """
         Returns a distinct set of a tuple DataSet using field position keys.
@@ -1139,11 +1157,37 @@ class IterativeDataSet(DataSet):
         child_set = DataSet(self._env, child)
         child.identifier = _Identifier.ITERATE
         if termination_criterion != None:
-            child.termination_criterion = termination_criterion._info
-        child.other = iteration_result._info
+            child.other = termination_criterion._info
+        child.iteration_result = iteration_result._info
         child.name = "PythonBulkIteration"
         child.parent = self._info
         self._info.children.append(child)
         self._env._sets.append(child)
         return child_set
         # todo aggregations
+
+
+class DeltaIteration(object):
+    def __init__(self, solution_set, workset):
+        self.solution_set = solution_set
+        self.workset = workset
+
+    def close_with(self, solution_set_delta, new_workset):
+        """
+        Finalizes a delta iteration operation.
+        :param solution_set_delta: The delta for the solution set. The delta will be merged into the solution set at
+        the end of each iteration.
+        :param new_workset: The new workset (feedback data set) that will be fed back to the next iteration.
+        :return: The DataSet that represents the result of the iteration.
+        """
+        child = OperationInfo()
+        child_set = DataSet(self.workset._env, child)
+        child.identifier = _Identifier.ITERATE_DELTA
+        child.iteration_result = solution_set_delta._info
+        child.other = new_workset._info
+        child.name = "PythonDeltaIteration"
+        child.parent = self.solution_set._info
+        self.workset._info.children.append(child)
+        self.workset._env._sets.append(child)
+        return child_set
+

@@ -290,7 +290,7 @@ class Environment(object):
         collect(set.frm)
         collect(set.to)
         collect(set.id)
-        collect(set.termination_criterion.id if set.termination_criterion is not None else -1)
+        collect(set.iteration_result.id if set.iteration_result is not None else -1)
         collect(set.to_err)
         collect(set.count)
         collect(len(set.values))

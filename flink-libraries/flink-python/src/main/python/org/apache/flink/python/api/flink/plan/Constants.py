@@ -29,6 +29,8 @@ class _Identifier(object):
     CROSST = "cross_t"
     ITERATE_INIT = "iterate_init"
     ITERATE = "iterate"
+    ITERATE_DELTA_INIT = "iterate_delta_init"
+    ITERATE_DELTA = "iterate_delta"
     FLATMAP = "flatmap"
     FILTER = "filter"
     MAPPARTITION = "mappartition"
