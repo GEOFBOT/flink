@@ -593,6 +593,37 @@ class DataSet(object):
         self._env._sets.append(child)
         return child_set
 
+    def partition_by_range(self, *fields):
+        f = None
+        if len(fields) == 0:
+            f = lambda x: (x,)
+        f = get_fields(fields, f)
+        return self.map(lambda x: (f(x), x)).name("RangePartitionPreStep")._partition_by_range(tuple([x for x in range(len(fields))]))
+
+    def _partition_by_range(self, fields):
+        self._info.types = _createKeyValueTypeInfo(len(fields))
+        child = OperationInfo()
+        child_set = DataSet(self._env, child)
+        child.identifier = _Identifier.PARTITION_RANGE
+        child.parent = self._info
+        child.keys = fields
+        self._info.parallelism = child.parallelism
+        self._info.children.append(child)
+        self._env._sets.append(child)
+        return child_set
+
+    def sort_partition(self, field, order):
+        child = OperationInfo()
+        child_set = OperatorSet(self._env, child)
+        child.identifier = _Identifier.SORT_PARTITION
+        child.parent = self._info
+        child.field = field
+        child.order = order
+        self._info.parallelism = child.parallelism
+        self._info.children.append(child)
+        self._env._sets.append(child)
+        return child_set
+
     def rebalance(self):
         """
         Enforces a re-balancing of the DataSet, i.e., the DataSet is evenly distributed over all parallel instances of the

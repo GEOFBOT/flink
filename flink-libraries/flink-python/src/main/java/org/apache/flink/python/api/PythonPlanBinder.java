@@ -277,8 +277,8 @@ public class PythonPlanBinder {
 	 */
 	protected enum Operation {
 		SOURCE_CSV, SOURCE_TEXT, SOURCE_VALUE, SOURCE_SEQ, SINK_CSV, SINK_TEXT, SINK_PRINT,
-		SORT, UNION, FIRST, DISTINCT, GROUPBY,
-		REBALANCE, PARTITION_HASH,
+		SORT, SORT_PARTITION, UNION, FIRST, DISTINCT, GROUPBY,
+		REBALANCE, PARTITION_HASH, PARTITION_RANGE,
 		BROADCAST,
 		COGROUP, CROSS, CROSS_H, CROSS_T,
 		ITERATE_INIT, ITERATE,
@@ -329,6 +329,9 @@ public class PythonPlanBinder {
 				case PARTITION_HASH:
 					createHashPartitionOperation(info);
 					break;
+				case PARTITION_RANGE:
+					createRangePartitionOperation(info);
+					break;
 				case REBALANCE:
 					createRebalanceOperation(info);
 					break;
@@ -337,6 +340,9 @@ public class PythonPlanBinder {
 					break;
 				case SORT:
 					createSortOperation(info);
+					break;
+				case SORT_PARTITION:
+					createSortPartitionOperation(info);
 					break;
 				case UNION:
 					createUnionOperation(info);
@@ -485,6 +491,13 @@ public class PythonPlanBinder {
 				.map(new KeyDiscarder()).setParallelism(getParallelism(info)).name("HashPartitionPostStep"));
 	}
 
+	@SuppressWarnings("unchecked")
+	private void createRangePartitionOperation(PythonOperationInfo info) throws IOException {
+		DataSet op1 = (DataSet) sets.get(info.parentID);
+		sets.put(info.setID, op1.partitionByRange(info.keys).setParallelism(getParallelism(info))
+				.map(new KeyDiscarder()).setParallelism(getParallelism(info)).name("RangePartitionPostStep"));
+	}
+
 	private void createRebalanceOperation(PythonOperationInfo info) throws IOException {
 		DataSet op = (DataSet) sets.get(info.parentID);
 		sets.put(info.setID, op.rebalance().setParallelism(getParallelism(info)).name("Rebalance"));
@@ -499,6 +512,11 @@ public class PythonPlanBinder {
 		if (op1 instanceof SortedGrouping) {
 			sets.put(info.setID, ((SortedGrouping) op1).sortGroup(info.field, info.order));
 		}
+	}
+
+	private void createSortPartitionOperation(PythonOperationInfo info) throws IOException {
+		DataSet op = (DataSet) sets.get(info.parentID);
+		sets.put(info.setID, op.sortPartition(info.field, info.order).setParallelism(getParallelism(info)).name("PythonSortPartition"));
 	}
 
 	@SuppressWarnings("unchecked")

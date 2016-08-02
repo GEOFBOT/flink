@@ -22,6 +22,7 @@ class _Identifier(object):
     Gotta be kept in sync with java constants!
     """
     SORT = "sort"
+    SORT_PARTITION = "sort_partition"
     GROUP = "groupby"
     COGROUP = "cogroup"
     CROSS = "cross"
@@ -51,6 +52,7 @@ class _Identifier(object):
     FIRST = "first"
     DISTINCT = "distinct"
     PARTITION_HASH = "partition_hash"
+    PARTITION_RANGE = "partition_range"
     REBALANCE = "rebalance"
 
 class WriteMode(object):

@@ -16,6 +16,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 ################################################################################
+from flink.plan.Constants import Order
 from flink.plan.Environment import get_environment
 from flink.functions.MapFunction import MapFunction
 from flink.functions.CrossFunction import CrossFunction
@@ -123,6 +124,12 @@ if __name__ == "__main__":
         .map(MapperBcv()).with_broadcast_set("test", d2) \
         .map_partition(Verify([1, 6, 12], "Broadcast")).output()
 
+    #Sort Partition
+    d5 \
+        .partition_by_range(0) \
+        .sort_partition(0, Order.ASCENDING) \
+        .map_partition(Verify([(4.1, 4.1, 3), (4.2, 4.1, 3), (4.3, 4.4, 1), (4.4, 4.3, 1)], "Sort Partition")).output()
+
     #Misc
     class Mapper(MapFunction):
         def map(self, value):
@@ -146,6 +153,8 @@ if __name__ == "__main__":
         .map_partition(Verify([1, 12], "Distinct")).output()
     d2 \
         .partition_by_hash(3)
+    d2 \
+        .partition_by_range(3)
 
 
     #Execution
