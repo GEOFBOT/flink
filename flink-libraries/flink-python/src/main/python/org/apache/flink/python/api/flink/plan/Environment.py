@@ -229,7 +229,13 @@ class Environment(object):
                 # we may only chain if the parent has only 1 child
                 # we may only chain if the parent is not used as a broadcast variable
                 # we may only chain if the parent does not use the child as a broadcast variable
-                if parent.operator is not None and len(parent.children) == 1 and len(parent.sinks) == 0 and parent not in self._broadcast and child not in parent.bcvars:
+                # we may only chain if the parent was not restricted from chaining by some other operation
+                if (parent.operator is not None and
+                        len(parent.children) == 1 and
+                        len(parent.sinks) == 0 and
+                        parent not in self._broadcast and
+                        child not in parent.bcvars and
+                        not parent.restrict_chaining):
                     parent.chained_info = child
                     parent.name += " -> " + child.name
                     parent.types = child.types
