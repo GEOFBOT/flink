@@ -59,6 +59,7 @@ class OperationInfo():
             self.sinks = []
             self.children = []
             self.operator = None
+            self.restrict_chaining = False
         else:
             self.__dict__.update(info.__dict__)
 

@@ -1210,11 +1210,13 @@ class IterativeDataSet(DataSet):
         :param iteration_result: The DataSet that will be fed back to the next iteration.
         :return: The DataSet that represents the result of the iteration.
         """
+        iteration_result._info.restrict_chaining = True
         child = OperationInfo()
         child_set = DataSet(self._env, child)
         child.identifier = _Identifier.ITERATE
         if termination_criterion != None:
             child.termination_criterion = termination_criterion._info
+            termination_criterion._info.restrict_chaining = True
         child.other = iteration_result._info
         child.name = "PythonBulkIteration"
         child.parent = self._info
