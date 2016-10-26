@@ -23,7 +23,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Iterator;
-import java.util.UUID;
+import java.util.Random;
 
 import org.apache.flink.api.common.functions.AbstractRichFunction;
 import org.apache.flink.configuration.Configuration;
@@ -97,9 +97,11 @@ public class PythonStreamer implements Serializable {
 	}
 
 	private void startPython() throws IOException {
-		// Incorporate unique IDs into the file paths so that we don't have channel collisions upon data set reuse
-		this.outputFilePath = FLINK_TMP_DATA_DIR + "/" + envID + "_" + setID + this.function.getRuntimeContext().getIndexOfThisSubtask() + "output" + UUID.randomUUID();
-		this.inputFilePath = FLINK_TMP_DATA_DIR + "/" + envID + "_" + setID + this.function.getRuntimeContext().getIndexOfThisSubtask() + "input" + UUID.randomUUID();
+		// Incorporate random numbers into the file paths so that we don't have channel collisions upon data set reuse
+		Random random = new Random();
+
+		this.outputFilePath = FLINK_TMP_DATA_DIR + "/" + envID + "_" + setID + this.function.getRuntimeContext().getIndexOfThisSubtask() + "output" + random.nextInt();
+		this.inputFilePath = FLINK_TMP_DATA_DIR + "/" + envID + "_" + setID + this.function.getRuntimeContext().getIndexOfThisSubtask() + "input" + random.nextInt();
 
 		sender.open(inputFilePath);
 		receiver.open(outputFilePath);
