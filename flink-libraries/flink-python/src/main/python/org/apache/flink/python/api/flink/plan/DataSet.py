@@ -1217,6 +1217,7 @@ class IterativeDataSet(DataSet):
         if termination_criterion != None:
             child.termination_criterion = termination_criterion._info
             termination_criterion._info.restrict_chaining = True
+            termination_criterion._info.parent.restrict_chaining = True  # TODO y u no
         child.other = iteration_result._info
         child.name = "PythonBulkIteration"
         child.parent = self._info
